@@ -7,7 +7,7 @@ export const SITE_CONFIG = {
   apiBase: '',
   currency: 'KES',
   // International format, digits only (e.g. 254712345678). Used for every WhatsApp button.
-  whatsappNumber: '254700000000',
+  whatsappNumber: '254790991443',
   phoneDisplay: '+254 790 991 443',
   email: 'jimnjoro16@gmail.com',
   location: 'Moi Ave,Mombasa, Kenya',
