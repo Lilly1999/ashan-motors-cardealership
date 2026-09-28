@@ -1,0 +1,94 @@
+@if (car(); as car) {
+  <div class="container detail-page">
+    <nav class="breadcrumb dark" aria-label="Breadcrumb">
+      <a routerLink="/">Home</a><span>/</span><a routerLink="/stock">Stock list</a><span>/</span><a routerLink="/stock" [queryParams]="{ make: car.make }">{{ car.make }}</a><span>/</span>{{ car.model }}
+    </nav>
+
+    <div class="detail-layout">
+      <div class="detail-gallery">
+        <div class="gallery-frame">
+          <img [src]="car.images[photoIndex()]" [alt]="inventory.title(car) + ' photo ' + (photoIndex() + 1)">
+          <span class="status-badge" [attr.data-tone]="car.status === 'sold' ? 'sold' : inventory.isNew(car) ? 'new' : 'stock'">{{ car.status === 'sold' ? 'Sold' : inventory.isNew(car) ? 'New arrival' : 'In stock' }}</span>
+          @if (car.images.length > 1) {
+            <button type="button" class="gallery-arrow prev" (click)="step(-1)" aria-label="Previous photo">←</button>
+            <button type="button" class="gallery-arrow next" (click)="step(1)" aria-label="Next photo">→</button>
+            <span class="gallery-count">{{ photoIndex() + 1 }} / {{ car.images.length }}</span>
+          }
+        </div>
+        @if (car.images.length > 1) {
+          <div class="thumbnail-row">
+            @for (image of car.images; track $index) {
+              <button type="button" [class.active]="photoIndex() === $index" (click)="photoIndex.set($index)" [attr.aria-label]="'Photo ' + ($index + 1)"><img [src]="image" alt=""></button>
+            }
+          </div>
+        }
+
+        <section class="detail-block">
+          <h2>About this car</h2>
+          <p class="detail-description">{{ car.description }}</p>
+        </section>
+
+        <section class="detail-block">
+          <h2>Specifications</h2>
+          <dl class="spec-table">
+            @for (row of specs(); track row[0]) { <div><dt>{{ row[0] }}</dt><dd>{{ row[1] }}</dd></div> }
+          </dl>
+        </section>
+      </div>
+
+      <aside class="detail-panel">
+        <span class="car-make">{{ car.make }}</span>
+        <h1>{{ car.model }}</h1>
+        <p class="detail-sub">{{ car.year }} · {{ car.body }} · {{ car.mileage | number }} km</p>
+        <p class="detail-price">{{ inventory.formatPrice(car.price) }}</p>
+
+        <div class="quick-specs">
+          <div><span>Year</span><strong>{{ car.year }}</strong></div>
+          <div><span>Mileage</span><strong>{{ car.mileage | number }} km</strong></div>
+          <div><span>Gearbox</span><strong>{{ car.transmission }}</strong></div>
+          <div><span>Fuel</span><strong>{{ car.fuel }}</strong></div>
+          @if (car.engine) { <div><span>Engine</span><strong>{{ car.engine }}</strong></div> }
+          @if (car.drive) { <div><span>Drive</span><strong>{{ car.drive }}</strong></div> }
+        </div>
+
+        <div class="panel-actions">
+          @if (car.status === 'available') {
+            <a class="btn btn-whatsapp btn-lg" [href]="inventory.contactLink(car)" target="_blank" rel="noopener"><app-social-icon name="whatsapp" /> Send inquiry on WhatsApp</a>
+          } @else {
+            <p class="sold-banner">This car has been sold.</p>
+            <a class="btn btn-whatsapp btn-lg" [href]="inventory.contactLink()" target="_blank" rel="noopener"><app-social-icon name="whatsapp" /> Find me one like this</a>
+          }
+          <a class="btn btn-outline btn-lg" href="tel:+{{ config.whatsappNumber }}">Call {{ config.phoneDisplay }}</a>
+          <div class="panel-row">
+            <button type="button" class="btn btn-soft" (click)="inventory.toggleFavourite(car.id)">{{ inventory.isFavourite(car.id) ? '♥ Saved' : '♡ Save' }}</button>
+            <button type="button" class="btn btn-soft" (click)="share()">↗ Share</button>
+          </div>
+          @if (shareMessage()) { <p class="share-message" role="status">{{ shareMessage() }}</p> }
+        </div>
+        <p class="panel-note">Listed {{ car.createdAt | date: 'd MMM y' }} · {{ config.location }}</p>
+      </aside>
+    </div>
+
+    @if (similar().length) {
+      <section class="section similar-section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow dark"><span></span> YOU MAY ALSO LIKE</p>
+            <h2>Similar <em>cars.</em></h2>
+          </div>
+          <a class="text-link" routerLink="/stock" [queryParams]="{ body: car.body }">More {{ car.body }} →</a>
+        </div>
+        <div class="car-grid">@for (item of similar(); track item.id) { <app-car-card [car]="item" /> }</div>
+      </section>
+    }
+  </div>
+} @else if (inventory.loading()) {
+  <div class="container detail-page"><div class="gallery-frame skeleton"></div></div>
+} @else {
+  <div class="container detail-page empty-state">
+    <span class="empty-mark">—</span>
+    <h3>We couldn't find that car.</h3>
+    <p>It may have been removed from the showroom.</p>
+    <div class="empty-actions"><a class="btn btn-primary" routerLink="/stock">Browse the stock list</a></div>
+  </div>
+}

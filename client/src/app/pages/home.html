@@ -1,0 +1,230 @@
+<!-- BANNER -->
+<section class="hero" aria-label="Featured cars">
+  @for (car of heroCars(); track car.id; let index = $index) {
+    <img class="hero-image" [class.active]="index === heroIndex() % heroCars().length" [src]="car.images[0]" alt="" [attr.fetchpriority]="index === 0 ? 'high' : null">
+  }
+  <div class="hero-shade"></div>
+  @let car = heroCar();
+  <div class="hero-content">
+    @for (item of heroCars(); track item.id; let index = $index) {
+      @if (index === heroIndex() % heroCars().length) {
+        <div class="hero-slide">
+          <p class="eyebrow"><span></span> {{ inventory.isNew(car) ? 'JUST ARRIVED' : 'NOW IN THE SHOWROOM' }}</p>
+          <h1>The {{ car.make }}<br><em>{{ car.model }}</em></h1>
+          <span class="signature hero-signature">{{ config.tagline }} · Ashan Motors</span>
+          <p class="hero-meta">{{ car.year }} · {{ car.body }} · {{ car.transmission }} · {{ car.fuel }}</p>
+          <p class="hero-price">{{ inventory.formatPrice(car.price) }}</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" [href]="inventory.contactLink(car)" target="_blank" rel="noopener">Reserve a private viewing</a>
+            <a class="btn btn-ghost-light btn-lg" [routerLink]="['/cars', car.id]">View this car →</a>
+          </div>
+        </div>
+      }
+    }
+  </div>
+  <div class="hero-controls">
+    <button type="button" class="hero-arrow" (click)="nextHero(-1)" aria-label="Previous featured car">←</button>
+    <div class="hero-dots">
+      @for (item of heroCars(); track item.id; let index = $index) {
+        <button type="button" [class.active]="index === heroIndex() % heroCars().length" (click)="heroIndex.set(index)" [attr.aria-label]="'Show ' + inventory.title(item)"></button>
+      }
+    </div>
+    <button type="button" class="hero-arrow" (click)="nextHero(1)" aria-label="Next featured car">→</button>
+  </div>
+</section>
+
+<!-- SEARCH PANEL -->
+<section class="search-panel" aria-label="Search cars">
+  <div class="search-panel-head">
+    <h2>Find your <em>next car</em></h2>
+    <p><strong>{{ inventory.available().length }}</strong> cars in stock · <strong>{{ inventory.newArrivals().length }}</strong> new arrivals</p>
+  </div>
+  <form class="search-fields" (ngSubmit)="searchCars()">
+    <label><span>Make</span>
+      <select name="make" [ngModel]="make()" (ngModelChange)="setMake($event)">
+        <option value="">Any make</option>
+        @for (item of inventory.makes(); track item.name) { <option [value]="item.name">{{ item.name }} ({{ item.count }})</option> }
+      </select>
+    </label>
+    <label><span>Model</span>
+      <select name="model" [ngModel]="model()" (ngModelChange)="model.set($event)">
+        <option value="">Any model</option>
+        @for (item of models(); track item) { <option [value]="item">{{ item }}</option> }
+      </select>
+    </label>
+    <label><span>Body type</span>
+      <select name="body" [ngModel]="body()" (ngModelChange)="body.set($event)">
+        <option value="">Any type</option>
+        @for (item of inventory.bodyTypes(); track item.name) { <option [value]="item.name">{{ item.name }}</option> }
+      </select>
+    </label>
+    <label><span>Min. year</span>
+      <select name="minYear" [ngModel]="minYear()" (ngModelChange)="minYear.set($event)">
+        <option value="">Any year</option>
+        @for (item of years(); track item) { <option [value]="item">{{ item }}</option> }
+      </select>
+    </label>
+    <label><span>Max. price</span>
+      <select name="maxPrice" [ngModel]="maxPrice()" (ngModelChange)="maxPrice.set($event)">
+        <option value="">Any price</option>
+        @for (bracket of priceBrackets(); track bracket.label) { @if (bracket.max) { <option [value]="bracket.max">Up to {{ inventory.formatPrice(bracket.max) }}</option> } }
+      </select>
+    </label>
+    <div class="search-options">
+      <label class="check"><input type="checkbox" name="newOnly" [ngModel]="newOnly()" (ngModelChange)="newOnly.set($event)"> New arrivals only</label>
+      <label class="check"><input type="checkbox" name="includeSold" [ngModel]="includeSold()" (ngModelChange)="includeSold.set($event)"> Include sold cars</label>
+    </div>
+    <div class="search-buttons">
+      <button class="btn btn-primary btn-lg" type="submit">Search cars</button>
+      <a class="btn btn-outline btn-lg" routerLink="/stock">Advanced search</a>
+    </div>
+  </form>
+</section>
+
+@if (inventory.apiOffline()) {
+  <div class="container"><div class="offline-note" role="status">Showing sample cars. Start the API to load live stock.</div></div>
+}
+
+<!-- HANDPICKED -->
+<section class="section container">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow dark"><span></span> HANDPICKED SELECTION</p>
+      <h2>Our premium <em>picks.</em></h2>
+    </div>
+    <a class="text-link" routerLink="/stock">View full stock list →</a>
+  </div>
+  @if (inventory.loading()) {
+    <div class="car-grid">@for (placeholder of [1, 2, 3, 4]; track placeholder) { <div class="car-card skeleton"></div> }</div>
+  } @else {
+    <div class="car-grid">@for (item of handpicked(); track item.id) { <app-car-card [car]="item" /> }</div>
+  }
+</section>
+
+<!-- NEW ARRIVALS -->
+@if (latest().length) {
+  <section class="section section-dark">
+    <div class="container">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow"><span></span> NEW ARRIVALS</p>
+          <h2>Latest additions <em>to our stock.</em></h2>
+        </div>
+        <a class="text-link light" routerLink="/stock" [queryParams]="{ status: 'new' }">See all new arrivals →</a>
+      </div>
+      <div class="car-grid">@for (item of latest(); track item.id) { <app-car-card [car]="item" /> }</div>
+    </div>
+  </section>
+}
+
+<!-- BROWSE BY -->
+<section class="section container browse-section">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow dark"><span></span> SHOP YOUR WAY</p>
+      <h2>Browse by <em>budget, year & type.</em></h2>
+    </div>
+  </div>
+  <div class="browse-grid">
+    <div class="browse-block">
+      <h3>Car price <small>({{ config.currency }})</small></h3>
+      <div class="browse-links">
+        @for (bracket of priceBrackets(); track bracket.label) {
+          <a routerLink="/stock" [queryParams]="bracketParams(bracket, 'Price')" [class.empty]="!bracket.count">{{ bracket.label }} <span>{{ bracket.count }}</span></a>
+        }
+      </div>
+    </div>
+    <div class="browse-block">
+      <h3>Year</h3>
+      <div class="browse-links">
+        @for (bracket of yearBrackets(); track bracket.label) {
+          <a routerLink="/stock" [queryParams]="bracketParams(bracket, 'Year')" [class.empty]="!bracket.count">{{ bracket.label }} <span>{{ bracket.count }}</span></a>
+        }
+      </div>
+    </div>
+  </div>
+  @if (inventory.bodyTypes().length) {
+    <div class="type-tiles">
+      @for (body of inventory.bodyTypes(); track body.name) {
+        <a class="type-tile" routerLink="/stock" [queryParams]="{ body: body.name }">
+          @if (body.image) { <img [src]="body.image" alt="" loading="lazy"> }
+          <strong>{{ plural(body.name) }}</strong>
+          <span>{{ body.count }} in stock →</span>
+        </a>
+      }
+    </div>
+  }
+</section>
+
+<!-- CATEGORY ROWS -->
+@for (category of categories(); track category.name) {
+  <section class="section container category-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow dark"><span></span> {{ category.name }}</p>
+        <h2>{{ plural(category.name) }} <em>· {{ category.tagline }}</em></h2>
+      </div>
+      <a class="text-link" routerLink="/stock" [queryParams]="{ body: category.name }">View all {{ plural(category.name) }} ({{ category.count }}) →</a>
+    </div>
+    <div class="car-grid">@for (item of category.cars; track item.id) { <app-car-card [car]="item" /> }</div>
+  </section>
+}
+
+<!-- WHY US -->
+<section class="section section-dark" id="why-us">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow"><span></span> WHY ASHAN MOTORS</p>
+        <h2>Buying a car, <em>made simple.</em></h2>
+      </div>
+    </div>
+    <div class="why-grid">
+      <article><span>01</span><h3>Hand-picked stock</h3><p>Every car in the showroom is chosen for its condition and history.</p></article>
+      <article><span>02</span><h3>Clear pricing</h3><p>The price is listed up front on every car, so you can plan with confidence.</p></article>
+      <article><span>03</span><h3>Fast replies</h3><p>Send an inquiry on WhatsApp and talk directly to our sales team.</p></article>
+      <article><span>04</span><h3>View & test drive</h3><p>Book a viewing and test drive at a time that suits you.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section container faq-section" id="faq">
+  <div class="faq-intro">
+    <p class="eyebrow dark"><span></span> FAQ</p>
+    <h2>Questions? <em>Answered.</em></h2>
+    <p>Everything you need to know before you buy. Can't find your answer? Our team is one message away.</p>
+    <a class="btn btn-whatsapp" [href]="inventory.contactLink()" target="_blank" rel="noopener"><app-social-icon name="whatsapp" /> Ask us on WhatsApp</a>
+  </div>
+  <div class="faq-list">
+    @for (faq of faqs; track faq.question; let first = $first) {
+      <details [open]="first"><summary>{{ faq.question }}</summary><p>{{ faq.answer }}</p></details>
+    }
+  </div>
+</section>
+
+<!-- CONTACT / SOCIAL -->
+<section class="section contact-band" id="contact">
+  <div class="container contact-grid">
+    <div>
+      <p class="eyebrow"><span></span> STAY IN THE LOOP</p>
+      <h2>See new cars <em>first.</em></h2>
+      <p class="contact-copy">We post walkarounds and fresh arrivals on our socials before they sell. Follow along, or visit us at the showroom.</p>
+      <ul class="contact-list">
+        <li><span>CALL</span><a href="tel:+{{ config.whatsappNumber }}">{{ config.phoneDisplay }}</a></li>
+        <li><span>EMAIL</span><a href="mailto:{{ config.email }}">{{ config.email }}</a></li>
+        <li><span>VISIT</span>{{ config.location }}</li>
+        <li><span>HOURS</span>{{ config.hours }}</li>
+      </ul>
+    </div>
+    <div class="social-grid">
+      @for (social of socials(); track social.network) {
+        <a class="social-tile" [attr.data-network]="social.network" [href]="social.url" target="_blank" rel="noopener">
+          <app-social-icon [name]="social.network" />
+          <strong>{{ social.label }}</strong>
+          <span>{{ social.hint }} ↗</span>
+        </a>
+      }
+    </div>
+  </div>
+</section>

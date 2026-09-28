@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Secrets and local data — never commit these
+.env
+.env.*
+!.env.example
+server/data/
+server/uploads/
+
+# Vercel
+.vercel/
+
+# OS / editor
+.DS_Store
+Thumbs.db

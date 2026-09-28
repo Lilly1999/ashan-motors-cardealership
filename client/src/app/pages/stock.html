@@ -1,0 +1,125 @@
+<section class="page-banner">
+  <div class="container">
+    <nav class="breadcrumb" aria-label="Breadcrumb"><a routerLink="/">Home</a><span>/</span>Stock list</nav>
+    <h1>Stock <em>list.</em></h1>
+    <p>{{ results().length }} {{ results().length === 1 ? 'vehicle' : 'vehicles' }} · {{ statusLabel() }}</p>
+  </div>
+</section>
+
+<div class="container stock-layout">
+  <aside class="filters" [class.open]="filtersOpen()" aria-label="Filters">
+    <div class="filters-head">
+      <h2>Filters</h2>
+      <button type="button" class="text-button" (click)="clearAll()">Clear all</button>
+      <button type="button" class="filters-close" (click)="filtersOpen.set(false)" aria-label="Close filters">×</button>
+    </div>
+
+    <fieldset class="status-options">
+      <legend>Show</legend>
+      @for (option of statusOptions; track option.value) {
+        <label class="radio" [class.checked]="status() === option.value">
+          <input type="radio" name="status" [value]="option.value" [checked]="status() === option.value" (change)="set('status', option.value)">
+          {{ option.label }}
+          @if (option.value === 'saved') { <span>{{ inventory.favourites().length }}</span> }
+        </label>
+      }
+    </fieldset>
+
+    <label class="filter-field"><span>Make</span>
+      <select [ngModel]="make()" (ngModelChange)="set('make', $event)"><option value="">Any make</option>@for (item of makes(); track item) { <option [value]="item">{{ item }}</option> }</select>
+    </label>
+    <label class="filter-field"><span>Model</span>
+      <select [ngModel]="model()" (ngModelChange)="set('model', $event)"><option value="">Any model</option>@for (item of models(); track item) { <option [value]="item">{{ item }}</option> }</select>
+    </label>
+
+    <div class="filter-field"><span>Body type</span>
+      <div class="chip-group">
+        @for (item of bodies(); track item) {
+          <button type="button" [class.selected]="body() === item" (click)="set('body', body() === item ? '' : item)">{{ item }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="filter-pair">
+      <label class="filter-field"><span>Year from</span>
+        <select [ngModel]="minYear()" (ngModelChange)="set('minYear', $event)"><option value="">Any</option>@for (item of years(); track item) { <option [value]="item">{{ item }}</option> }</select>
+      </label>
+      <label class="filter-field"><span>Year to</span>
+        <select [ngModel]="maxYear()" (ngModelChange)="set('maxYear', $event)"><option value="">Any</option>@for (item of years(); track item) { <option [value]="item">{{ item }}</option> }</select>
+      </label>
+    </div>
+
+    <div class="filter-pair">
+      <label class="filter-field"><span>Min. price</span>
+        <select [ngModel]="minPrice()" (ngModelChange)="set('minPrice', $event)"><option value="">Any</option>@for (step of priceSteps; track step) { <option [value]="'' + step">{{ inventory.formatPrice(step) }}</option> }</select>
+      </label>
+      <label class="filter-field"><span>Max. price</span>
+        <select [ngModel]="maxPrice()" (ngModelChange)="set('maxPrice', $event)"><option value="">Any</option>@for (step of priceSteps; track step) { <option [value]="'' + step">{{ inventory.formatPrice(step) }}</option> }</select>
+      </label>
+    </div>
+
+    <div class="filter-pair">
+      <label class="filter-field"><span>Fuel</span>
+        <select [ngModel]="fuel()" (ngModelChange)="set('fuel', $event)"><option value="">Any</option>@for (item of fuels(); track item) { <option [value]="item">{{ item }}</option> }</select>
+      </label>
+      <label class="filter-field"><span>Gearbox</span>
+        <select [ngModel]="transmission()" (ngModelChange)="set('transmission', $event)"><option value="">Any</option>@for (item of transmissions(); track item) { <option [value]="item">{{ item }}</option> }</select>
+      </label>
+    </div>
+
+    <label class="filter-field"><span>Collection</span>
+      <select [ngModel]="collection()" (ngModelChange)="set('collection', $event)"><option value="">All collections</option>@for (item of inventory.collections(); track item) { <option [value]="item">{{ item }}</option> }</select>
+    </label>
+
+    <button type="button" class="btn btn-primary filters-apply" (click)="filtersOpen.set(false)">Show {{ results().length }} vehicles</button>
+  </aside>
+
+  <main class="stock-main">
+    <div class="stock-toolbar">
+      <label class="search-box">
+        <span class="search-icon" aria-hidden="true"></span>
+        <input type="search" aria-label="Search cars" placeholder="Search make, model, year or colour" [ngModel]="q()" (ngModelChange)="set('q', $event)">
+      </label>
+      <button type="button" class="btn btn-outline filters-toggle" (click)="filtersOpen.set(true)">Filters @if (activeFilters().length) { <b>{{ activeFilters().length }}</b> }</button>
+      <label class="sort-control"><span>Sort</span>
+        <select [ngModel]="sort()" (ngModelChange)="set('sort', $event)" aria-label="Sort cars">
+          <option value="newest">Recently added</option>
+          <option value="price-low">Price: low to high</option>
+          <option value="price-high">Price: high to low</option>
+          <option value="year-new">Year: newest first</option>
+          <option value="mileage-low">Mileage: lowest first</option>
+        </select>
+      </label>
+    </div>
+
+    @if (activeFilters().length) {
+      <div class="active-filters">
+        @for (item of activeFilters(); track item.key) {
+          <button type="button" (click)="set(item.key, '')">{{ item.label }} <span aria-label="Remove filter">×</span></button>
+        }
+        <button type="button" class="text-button" (click)="clearAll()">Clear all</button>
+      </div>
+    }
+
+    @if (inventory.apiOffline()) {
+      <div class="offline-note" role="status">Showing sample cars. Start the API to load live stock.</div>
+    }
+
+    @if (inventory.loading()) {
+      <div class="car-grid">@for (placeholder of [1, 2, 3]; track placeholder) { <div class="car-card skeleton"></div> }</div>
+    } @else if (results().length) {
+      <div class="car-grid">@for (car of results(); track car.id) { <app-car-card [car]="car" /> }</div>
+    } @else {
+      <div class="empty-state">
+        <span class="empty-mark">—</span>
+        <h3>No cars match those filters.</h3>
+        <p>Try removing a filter, or tell us what you're looking for and we'll help you find it.</p>
+        <div class="empty-actions">
+          <button type="button" class="btn btn-primary" (click)="showAll()">See all cars in stock</button>
+          <a class="btn btn-whatsapp" [href]="inventory.contactLink()" target="_blank" rel="noopener">Ask on WhatsApp</a>
+        </div>
+      </div>
+    }
+  </main>
+</div>
+@if (filtersOpen()) { <div class="filters-backdrop" (click)="filtersOpen.set(false)"></div> }

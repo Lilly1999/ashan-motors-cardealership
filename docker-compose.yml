@@ -1,0 +1,19 @@
+# Local PostgreSQL for Ashan Motors.
+#   Start:  docker compose up -d
+#   Stop:   docker compose down        (data is kept in the "ashan-pgdata" volume)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ashan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ashan_motors
+      POSTGRES_USER: ashan
+      POSTGRES_PASSWORD: ashan-dev-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ashan-pgdata:/var/lib/postgresql/data
+
+volumes:
+  ashan-pgdata:

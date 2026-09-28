@@ -1,0 +1,154 @@
+<main class="admin-shell">
+  <header class="admin-topbar">
+    <a class="wordmark" routerLink="/"><span class="logo-plate"><img class="brand-logo" src="logo.png" alt="" width="200" height="126"></span><span class="brand-name">ASHAN <b>MOTORS</b></span></a>
+    <span class="admin-label">STOCKROOM</span>
+    <a class="admin-exit" routerLink="/">← Back to website</a>
+  </header>
+
+  @if (!inventory.token()) {
+    <section class="login-panel">
+      <p class="eyebrow dark"><span></span> STAFF ONLY</p>
+      <h1>Welcome <em>back.</em></h1>
+      <p class="login-copy">Sign in to add, edit and remove cars.</p>
+      <form (ngSubmit)="signIn()">
+        <label for="admin-password">Admin password</label>
+        <input id="admin-password" name="password" type="password" autocomplete="current-password" [ngModel]="loginPassword()" (ngModelChange)="loginPassword.set($event)" required>
+        @if (loginError()) { <p class="form-error" role="alert">{{ loginError() }}</p> }
+        <button class="btn btn-primary btn-lg" type="submit">Sign in →</button>
+      </form>
+      @if (isLocal) {
+        <p class="login-hint">Development password: <code>ashan-demo-2026</code>. Set <code>ADMIN_PASSWORD</code> before going live.</p>
+      }
+    </section>
+  } @else {
+    <div class="admin-content">
+      <div class="admin-heading">
+        <div><p class="eyebrow dark"><span></span> INVENTORY CONTROL</p><h1>The <em>stockroom.</em></h1></div>
+        <button type="button" class="btn btn-primary btn-lg" (click)="startNewCar()">+ Add a car</button>
+      </div>
+      <div class="admin-stats">
+        <div><strong>{{ inventory.cars().length }}</strong><span>Total listings</span></div>
+        <div><strong>{{ inventory.available().length }}</strong><span>In stock</span></div>
+        <div><strong>{{ inventory.soldCount() }}</strong><span>Sold</span></div>
+        <div><strong>{{ inventory.newArrivals().length }}</strong><span>New arrivals</span></div>
+      </div>
+      @if (inventory.apiOffline()) { <div class="admin-alert" role="alert">The server is not reachable, so changes can't be saved. Start the API and reload.</div> }
+      @if (adminError()) { <div class="admin-alert" role="alert">{{ adminError() }}</div> }
+      @if (notice()) { <div class="admin-notice" role="status">{{ notice() }}</div> }
+
+      @if (formOpen()) {
+        <section class="editor-panel">
+          <div class="editor-heading">
+            <div><span class="eyebrow dark">{{ editingId() ? 'EDIT LISTING' : 'NEW LISTING' }}</span><h2>{{ editingId() ? 'Update the details.' : 'Bring a new car in.' }}</h2></div>
+            <button class="editor-close" type="button" (click)="cancelCarForm()" aria-label="Close form">×</button>
+          </div>
+          <form class="car-form" (ngSubmit)="saveCar()">
+            <p class="form-group-title">Vehicle</p>
+            <label>Make *<input name="make" [(ngModel)]="draft.make" required maxlength="60" placeholder="Toyota"></label>
+            <label>Model *<input name="model" [(ngModel)]="draft.model" required maxlength="80" placeholder="Land Cruiser Prado TX-L"></label>
+            <label>Year *<input name="year" type="number" [(ngModel)]="draft.year" min="1900" max="2100" required></label>
+            <label>Price ({{ config.currency }}) *<input name="price" type="number" [(ngModel)]="draft.price" min="0" required></label>
+            <label>Mileage (km) *<input name="mileage" type="number" [(ngModel)]="draft.mileage" min="0" required></label>
+            <label>Body type *<input name="body" list="body-options" [(ngModel)]="draft.body" required></label>
+
+            <p class="form-group-title">Specifications</p>
+            <label>Transmission *<select name="transmission" [(ngModel)]="draft.transmission"><option>Automatic</option><option>Manual</option></select></label>
+            <label>Fuel *<input name="fuel" list="fuel-options" [(ngModel)]="draft.fuel" required></label>
+            <label>Engine<input name="engine" [(ngModel)]="draft.engine" maxlength="30" placeholder="2,800cc"></label>
+            <label>Drive<select name="drive" [(ngModel)]="draft.drive"><option value="">—</option><option>2WD</option><option>4WD</option><option>AWD</option></select></label>
+            <label>Seats<input name="seats" type="number" [(ngModel)]="draft.seats" min="1" max="80" placeholder="5"></label>
+            <label>Colour<input name="color" [(ngModel)]="draft.color" maxlength="30" placeholder="Pearl white"></label>
+
+            <p class="form-group-title">Listing</p>
+            <label>Collection *<select name="collection" [(ngModel)]="draft.collection" required><option value="">Choose a collection</option>@for (collection of inventory.collections(); track collection) { <option [value]="collection">{{ collection }}</option> }</select></label>
+            <label>Status<select name="status" [(ngModel)]="draft.status"><option value="available">In stock</option><option value="sold">Sold</option></select></label>
+            <label class="switch-field">
+              <input type="checkbox" name="newArrival" [(ngModel)]="draft.newArrival">
+              <span><strong>Show in New Arrivals</strong><small>Appears in “Just arrived” on the home page and the New Arrivals filter.</small></span>
+            </label>
+            <label class="wide-field">Description *<textarea name="description" [(ngModel)]="draft.description" rows="4" required maxlength="1000" placeholder="Condition, features, service history…"></textarea></label>
+
+            <div class="wide-field photo-manager">
+              <span class="field-label">Photos * <small>The first photo is the cover shown in listings.</small></span>
+              <div class="photo-grid">
+                @for (image of draftImages(); track $index) {
+                  <div class="photo-thumb" [class.cover]="$index === 0">
+                    <img [src]="image" alt="">
+                    @if ($index === 0) { <span class="cover-badge">COVER</span> } @else { <button type="button" class="thumb-action" (click)="makeCover($index)">Make cover</button> }
+                    <button type="button" class="thumb-remove" (click)="removeImage($index)" aria-label="Remove photo">×</button>
+                  </div>
+                }
+                <label class="upload-tile" [class.busy]="uploading()">
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple (change)="uploadPhotos($event)" [disabled]="uploading()">
+                  <strong>{{ uploading() ? 'Uploading…' : '+ Upload photos' }}</strong>
+                  <small>JPG, PNG or WebP · up to 12 at once</small>
+                </label>
+              </div>
+              <div class="url-adder">
+                <input name="image-url" type="url" placeholder="…or paste an image link (https://…)" [ngModel]="imageUrl()" (ngModelChange)="imageUrl.set($event)" (keydown.enter)="$event.preventDefault(); addImageUrl()">
+                <button type="button" (click)="addImageUrl()">Add link</button>
+              </div>
+            </div>
+
+            <datalist id="body-options"><option value="SUV"></option><option value="Saloon"></option><option value="Hatchback"></option><option value="Pickup"></option><option value="Station wagon"></option><option value="Van"></option><option value="Coupe"></option></datalist>
+            <datalist id="fuel-options"><option value="Petrol"></option><option value="Diesel"></option><option value="Hybrid"></option><option value="Electric"></option></datalist>
+            <div class="form-actions">
+              <button class="btn btn-primary btn-lg" type="submit" [disabled]="uploading() || saving()">{{ saving() ? 'Saving…' : editingId() ? 'Save changes' : 'Add to showroom' }}</button>
+              <button class="btn btn-outline btn-lg" type="button" (click)="cancelCarForm()">Cancel</button>
+            </div>
+          </form>
+        </section>
+      }
+
+      <section class="admin-card">
+        <div class="admin-section-heading"><h2>Inventory <span>{{ inventory.cars().length }}</span></h2><p>Listings and sale status</p></div>
+        @if (inventory.cars().length) {
+          <div class="admin-table-wrap"><table>
+            <thead><tr><th>VEHICLE</th><th>COLLECTION</th><th>PRICE</th><th>STATUS</th><th><span class="sr-only">Actions</span></th></tr></thead>
+            <tbody>
+              @for (car of inventory.cars(); track car.id) {
+                <tr>
+                  <td><a class="admin-car-name" [routerLink]="['/cars', car.id]"><img [src]="car.images[0]" alt="" loading="lazy"><span><strong>{{ car.year }} {{ car.make }}</strong><small>{{ car.model }}</small></span></a></td>
+                  <td>{{ car.collection }}</td>
+                  <td>{{ inventory.formatPrice(car.price) }}</td>
+                  <td>
+                    <span class="table-status" [class.sold-status]="car.status === 'sold'"><i></i>{{ car.status === 'sold' ? 'Sold' : 'In stock' }}</span>
+                    @if (inventory.isNew(car)) { <span class="new-pill">NEW</span> }
+                  </td>
+                  <td class="row-actions">
+                    @if (pendingDeleteId() === car.id) {
+                      <span class="confirm-text">Remove this car?</span>
+                      <button type="button" class="remove-action" (click)="deleteCar(car)">Yes, remove</button>
+                      <button type="button" (click)="pendingDeleteId.set('')">Keep</button>
+                    } @else {
+                      <button type="button" (click)="editCar(car)">Edit</button>
+                      @if (car.status === 'available') {
+                        <button type="button" [class.new-action]="!inventory.isNew(car)" (click)="toggleNew(car)">{{ inventory.isNew(car) ? 'Remove from New' : '★ Mark as New' }}</button>
+                      }
+                      <button type="button" (click)="toggleSold(car)">{{ car.status === 'sold' ? 'Relist' : 'Mark sold' }}</button>
+                      <button type="button" class="remove-action" (click)="pendingDeleteId.set(car.id)">Remove</button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table></div>
+        } @else { <p class="admin-empty">No cars yet. Use “Add a car” to create your first listing.</p> }
+      </section>
+
+      <section class="admin-card collection-manager">
+        <div class="admin-section-heading"><h2>Collections</h2><p>Group new arrivals and special selections.</p></div>
+        <form class="collection-form" (ngSubmit)="addCollection()">
+          <input name="new-collection" placeholder="Collection name" [ngModel]="collectionName()" (ngModelChange)="collectionName.set($event)" required maxlength="60">
+          <button type="submit">Add collection +</button>
+        </form>
+        <div class="managed-collections">
+          @for (collection of inventory.collections(); track collection) {
+            <div><span>{{ collection }}</span><button type="button" (click)="removeCollection(collection)" [attr.aria-label]="'Remove ' + collection">×</button></div>
+          }
+        </div>
+      </section>
+      <button class="signout-button" type="button" (click)="signOut()">Sign out</button>
+    </div>
+  }
+</main>

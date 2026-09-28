@@ -1,0 +1,90 @@
+@if (isAdmin()) {
+  <router-outlet />
+} @else {
+  <div class="topline">
+    <div class="topline-info">
+      <span><i class="live-dot"></i>{{ config.location }}</span>
+      <a class="hide-sm" href="tel:+{{ config.whatsappNumber }}">{{ config.phoneDisplay }}</a>
+      <a class="hide-md" href="mailto:{{ config.email }}">{{ config.email }}</a>
+      <span class="hide-md">{{ config.hours }}</span>
+    </div>
+    <div class="topline-links">
+      @for (social of socials(); track social.network) {
+        <a [href]="social.url" target="_blank" rel="noopener" [attr.aria-label]="social.label"><app-social-icon [name]="social.network" /></a>
+      }
+    </div>
+  </div>
+
+  <header class="site-header">
+    <a class="wordmark" routerLink="/" aria-label="Ashan Motors home">
+      <img class="brand-logo" src="logo.png" alt="Your Moti Guy – Ashan Motors" width="200" height="126">
+      <span class="brand-name">ASHAN <b>MOTORS</b></span>
+    </a>
+    <nav class="main-nav" [class.open]="menuOpen()" id="main-nav" aria-label="Main navigation">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+      <a routerLink="/stock" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Stock list</a>
+      <a routerLink="/stock" [queryParams]="{ status: 'new' }">New arrivals</a>
+      <a routerLink="/stock" [queryParams]="{ body: 'SUV' }">SUVs</a>
+      <a routerLink="/" fragment="contact">Contact</a>
+      <div class="mobile-nav-extra">
+        <a class="btn btn-whatsapp" [href]="inventory.contactLink()" target="_blank" rel="noopener"><app-social-icon name="whatsapp" /> Chat on WhatsApp</a>
+        <a class="btn btn-ghost-light" href="tel:+{{ config.whatsappNumber }}">Call {{ config.phoneDisplay }}</a>
+      </div>
+    </nav>
+    <div class="header-actions">
+      <a class="icon-button" routerLink="/stock" aria-label="Search cars"><span class="search-icon" aria-hidden="true"></span></a>
+      <a class="icon-button saved-link" routerLink="/stock" [queryParams]="{ status: 'saved' }" aria-label="Saved cars">♥ @if (inventory.favourites().length) { <b>{{ inventory.favourites().length }}</b> }</a>
+      <a class="btn btn-primary desktop-only" [href]="inventory.contactLink()" target="_blank" rel="noopener"><app-social-icon name="whatsapp" /> WhatsApp us</a>
+      <button class="menu-toggle" type="button" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" aria-controls="main-nav" aria-label="Menu"><span></span><span></span></button>
+    </div>
+  </header>
+
+  <router-outlet />
+
+  <footer class="site-footer" id="footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="wordmark" routerLink="/"><span class="logo-plate"><img class="brand-logo" src="logo.png" alt="" width="200" height="126"></span><span class="brand-name">ASHAN <b>MOTORS</b></span></a>
+        <span class="signature footer-signature">{{ config.tagline }}</span>
+        <p>{{ config.about }}</p>
+        <div class="footer-socials">
+          @for (social of socials(); track social.network) {
+            <a [href]="social.url" target="_blank" rel="noopener" [attr.aria-label]="social.label"><app-social-icon [name]="social.network" /></a>
+          }
+        </div>
+      </div>
+      <div>
+        <h4>Quick links</h4>
+        <a routerLink="/">Home</a>
+        <a routerLink="/stock">Stock list</a>
+        <a routerLink="/stock" [queryParams]="{ status: 'new' }">New arrivals</a>
+        <a routerLink="/stock" [queryParams]="{ status: 'saved' }">Saved cars</a>
+        <a routerLink="/" fragment="faq">FAQ</a>
+      </div>
+      <div>
+        <h4>Vehicle types</h4>
+        @for (body of inventory.bodyTypes(); track body.name) {
+          <a routerLink="/stock" [queryParams]="{ body: body.name }">{{ body.name }} <span>({{ body.count }})</span></a>
+        } @empty {
+          <a routerLink="/stock">All vehicles</a>
+        }
+      </div>
+      <div>
+        <h4>Contact us</h4>
+        <p class="footer-contact"><span>Showroom</span>{{ config.location }}</p>
+        <p class="footer-contact"><span>Phone</span><a href="tel:+{{ config.whatsappNumber }}">{{ config.phoneDisplay }}</a></p>
+        <p class="footer-contact"><span>Email</span><a href="mailto:{{ config.email }}">{{ config.email }}</a></p>
+        <p class="footer-contact"><span>Hours</span>{{ config.hours }}</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© {{ year }} Ashan Motors. All rights reserved.</span>
+      <a routerLink="/admin">Staff sign in</a>
+    </div>
+  </footer>
+
+  <a class="whatsapp-float" [href]="inventory.contactLink()" target="_blank" rel="noopener" aria-label="Chat with Ashan Motors on WhatsApp">
+    <app-social-icon name="whatsapp" />
+    <span>Chat with us</span>
+  </a>
+}
